@@ -7,8 +7,14 @@ import (
 func setupRouter() *http.ServeMux {
 	mux := http.NewServeMux()
 
-	fs := http.FileServer(http.Dir("."))
+	// mux.Handle("/", http.FileServer(http.Dir(".")))
+	appFs := http.StripPrefix("/app", http.FileServer(http.Dir(".")))
+	mux.Handle("/app/", appFs)
 
-	mux.Handle("/", fs)
+	// assetsHandler := http.FileServer(http.Dir("./assets"))
+	// mux.Handle("assets/", assetsHandler)
+
+	mux.HandleFunc("/healthz", handleReadiness)
+
 	return mux
 }
