@@ -6,7 +6,7 @@ import (
 )
 
 func handleReadiness(w http.ResponseWriter, r *http.Request) {
-	writePlainText(w, http.StatusOK, "Ok")
+	writePlainText(w, http.StatusOK, "OK")
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
