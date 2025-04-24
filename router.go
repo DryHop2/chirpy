@@ -14,9 +14,9 @@ func setupRouter(cfg *apiConfig) *http.ServeMux {
 	// assetsHandler := http.FileServer(http.Dir("./assets"))
 	// mux.Handle("assets/", assetsHandler)
 
-	mux.HandleFunc("/healthz", handleReadiness)
-	mux.HandleFunc("/metrics", cfg.handleMetrics)
-	mux.HandleFunc("/reset", cfg.handleReset)
+	mux.HandleFunc("GET /healthz", handleReadiness)
+	mux.HandleFunc("GET /metrics", cfg.handleMetrics)
+	mux.HandleFunc("POST /reset", cfg.handleReset)
 
 	return mux
 }
