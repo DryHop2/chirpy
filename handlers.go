@@ -6,9 +6,7 @@ import (
 )
 
 func handleReadiness(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("OK"))
+	writePlainText(w, http.StatusOK, "Ok")
 }
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
@@ -20,16 +18,10 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 
 func (cfg *apiConfig) handleMetrics(w http.ResponseWriter, r *http.Request) {
 	hits := cfg.fileSeverHits.Load()
-
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(fmt.Sprintf("Hits: %d", hits)))
+	writePlainText(w, http.StatusOK, fmt.Sprintf("Hits: %d", hits))
 }
 
 func (cfg *apiConfig) handleReset(w http.ResponseWriter, r *http.Request) {
 	cfg.fileSeverHits.Store(0)
-
-	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	w.Write([]byte("Counter reset."))
+	writePlainText(w, http.StatusOK, "Counter reset.")
 }
