@@ -16,9 +16,18 @@ func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 	})
 }
 
-func (cfg *apiConfig) handleMetrics(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) handleAdminMetrics(w http.ResponseWriter, r *http.Request) {
 	hits := cfg.fileServerHits.Load()
-	writePlainText(w, http.StatusOK, fmt.Sprintf("Hits: %d", hits))
+
+	html := fmt.Sprintf(`
+	<html>
+		<body>
+			<h1>Welcome, Chirpy Admin</h1>
+			<p>Chirpy has been visited %d times!</p>
+		</body>
+	</html>`, hits)
+
+	writePlainText(w, http.StatusOK, html)
 }
 
 func (cfg *apiConfig) handleReset(w http.ResponseWriter, r *http.Request) {

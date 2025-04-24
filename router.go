@@ -15,8 +15,8 @@ func setupRouter(cfg *apiConfig) *http.ServeMux {
 	// mux.Handle("assets/", assetsHandler)
 
 	mux.HandleFunc("GET /api/healthz", handleReadiness)
-	mux.HandleFunc("GET /api/metrics", cfg.handleMetrics)
-	mux.HandleFunc("POST /api/reset", cfg.handleReset)
+	mux.HandleFunc("GET /admin/metrics", cfg.handleAdminMetrics)
+	mux.HandleFunc("POST /admin/reset", cfg.handleReset)
 
 	return mux
 }
