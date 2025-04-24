@@ -11,17 +11,17 @@ func handleReadiness(w http.ResponseWriter, r *http.Request) {
 
 func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cfg.fileSeverHits.Add(1)
+		cfg.fileServerHits.Add(1)
 		next.ServeHTTP(w, r)
 	})
 }
 
 func (cfg *apiConfig) handleMetrics(w http.ResponseWriter, r *http.Request) {
-	hits := cfg.fileSeverHits.Load()
+	hits := cfg.fileServerHits.Load()
 	writePlainText(w, http.StatusOK, fmt.Sprintf("Hits: %d", hits))
 }
 
 func (cfg *apiConfig) handleReset(w http.ResponseWriter, r *http.Request) {
-	cfg.fileSeverHits.Store(0)
+	cfg.fileServerHits.Store(0)
 	writePlainText(w, http.StatusOK, "Counter reset.")
 }

@@ -5,7 +5,7 @@ import (
 )
 
 type apiConfig struct {
-	fileSeverHits atomic.Int32
+	fileServerHits atomic.Int32
 }
 
 func main() {
