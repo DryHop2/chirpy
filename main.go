@@ -1,6 +1,16 @@
 package main
 
+import (
+	"sync/atomic"
+)
+
+type apiConfig struct {
+	fileSeverHits atomic.Int32
+}
+
 func main() {
-	router := setupRouter()
+	apiCfg := &apiConfig{}
+
+	router := setupRouter(apiCfg)
 	startServer(router)
 }

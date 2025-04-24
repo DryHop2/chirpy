@@ -4,12 +4,12 @@ import (
 	"net/http"
 )
 
-func setupRouter() *http.ServeMux {
+func setupRouter(cfg *apiConfig) *http.ServeMux {
 	mux := http.NewServeMux()
 
 	// mux.Handle("/", http.FileServer(http.Dir(".")))
 	appFs := http.StripPrefix("/app", http.FileServer(http.Dir(".")))
-	mux.Handle("/app/", appFs)
+	mux.Handle("/app/", cfg.middlewareMetricsInc(appFs))
 
 	// assetsHandler := http.FileServer(http.Dir("./assets"))
 	// mux.Handle("assets/", assetsHandler)
