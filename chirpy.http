@@ -1,0 +1,21 @@
+### Health check
+GET http://localhost:8080/api/healthz
+Accept: text/plain
+
+###
+
+### Admin metrics
+GET http://localhost:8080/admin/metrics
+Accept: text/html
+
+###
+
+### Reset counter
+POST http://localhost:8080/admin/reset
+Content-Type: text/plain
+
+###
+
+### Fileserver - Load homepage
+GET http://localhost:8080/app
+Accept: text/html
