@@ -14,6 +14,7 @@ import (
 type apiConfig struct {
 	fileServerHits atomic.Int32
 	DB             *database.Queries
+	platform       string
 }
 
 func main() {
@@ -31,8 +32,8 @@ func main() {
 	dbQueries := database.New(db)
 
 	apiCfg := &apiConfig{
-		fileServerHits: atomic.Int32{},
-		DB:             dbQueries,
+		DB:       dbQueries,
+		platform: os.Getenv("PLATFORM"),
 	}
 
 	router := setupRouter(apiCfg)

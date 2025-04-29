@@ -4,6 +4,9 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"time"
+
+	"github.com/google/uuid"
 )
 
 func handleReadiness(w http.ResponseWriter, r *http.Request) {
@@ -31,10 +34,10 @@ func (cfg *apiConfig) handleAdminMetrics(w http.ResponseWriter, r *http.Request)
 	writePlainText(w, http.StatusOK, html)
 }
 
-func (cfg *apiConfig) handleReset(w http.ResponseWriter, r *http.Request) {
-	cfg.fileServerHits.Store(0)
-	writePlainText(w, http.StatusOK, "Counter reset.")
-}
+// func (cfg *apiConfig) handleReset(w http.ResponseWriter, r *http.Request) {
+// 	cfg.fileServerHits.Store(0)
+// 	writePlainText(w, http.StatusOK, "Counter reset.")
+// }
 
 type ChirpRequest struct {
 	Body string `json:"body"`
@@ -71,4 +74,53 @@ func (cfg *apiConfig) handleValidateChirp(w http.ResponseWriter, r *http.Request
 	writeJSON(w, http.StatusOK, CleanedResponse{
 		CleanedBody: cleaned,
 	})
+}
+
+type createUserRequest struct {
+	Email string `json:"email"`
+}
+
+type userResponse struct {
+	ID        uuid.UUID `json:"id"`
+	CreatedAt time.Time `json:"created_at"`
+	UpdatedAt time.Time `json:"updated_at"`
+	Email     string    `json:"email"`
+}
+
+func (cfg *apiConfig) handleCreateUser(w http.ResponseWriter, r *http.Request) {
+	var req createUserRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid JSON"})
+		return
+	}
+
+	dbUser, err := cfg.DB.CreateUser(r.Context(), req.Email)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Could not create user"})
+		return
+	}
+
+	resp := userResponse{
+		ID:        dbUser.ID,
+		CreatedAt: dbUser.CreatedAt,
+		UpdatedAt: dbUser.UpdatedAt,
+		Email:     dbUser.Email,
+	}
+
+	writeJSON(w, http.StatusCreated, resp)
+}
+
+func (cfg *apiConfig) handleAdminReset(w http.ResponseWriter, r *http.Request) {
+	if cfg.platform != "dev" {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	err := cfg.DB.DeleteAllUsers(r.Context())
+	if err != nil {
+		http.Error(w, "Failed to reset users", http.StatusInternalServerError)
+		return
+	}
+
+	writePlainText(w, http.StatusOK, "All users deleted.")
 }
