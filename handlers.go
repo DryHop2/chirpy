@@ -44,8 +44,8 @@ type ErrorResponse struct {
 	Error string `json:"error"`
 }
 
-type ValidResposne struct {
-	Valid bool `json:"valid"`
+type CleanedResponse struct {
+	CleanedBody string `json:"cleaned_body"`
 }
 
 func (cfg *apiConfig) handleValidateChirp(w http.ResponseWriter, r *http.Request) {
@@ -66,7 +66,9 @@ func (cfg *apiConfig) handleValidateChirp(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	writeJSON(w, http.StatusOK, ValidResposne{
-		Valid: true,
+	cleaned := filterProfanity(chirp.Body)
+
+	writeJSON(w, http.StatusOK, CleanedResponse{
+		CleanedBody: cleaned,
 	})
 }
