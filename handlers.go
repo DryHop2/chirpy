@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/DryHop2/chirpy/internal/auth"
 	"github.com/DryHop2/chirpy/internal/database"
 	"github.com/google/uuid"
 )
@@ -80,7 +81,8 @@ func (cfg *apiConfig) handleValidateChirp(w http.ResponseWriter, r *http.Request
 }
 
 type createUserRequest struct {
-	Email string `json:"email"`
+	Email    string `json:"email"`
+	Password string `json:"password"`
 }
 
 type userResponse struct {
@@ -97,7 +99,16 @@ func (cfg *apiConfig) handleCreateUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	dbUser, err := cfg.DB.CreateUser(r.Context(), req.Email)
+	hashedPassword, err := auth.HashPassword(req.Password)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to hash password"})
+		return
+	}
+
+	dbUser, err := cfg.DB.CreateUser(r.Context(), database.CreateUserParams{
+		Email:          req.Email,
+		HashedPassword: hashedPassword,
+	})
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Could not create user"})
 		return
@@ -223,4 +234,37 @@ func (cfg *apiConfig) handleGetChirp(w http.ResponseWriter, r *http.Request) {
 		Body:      chirp.Body,
 		UserID:    chirp.UserID,
 	})
+}
+
+type loginRequest struct {
+	Email    string `json:"email"`
+	Password string `json:"password"`
+}
+
+func (cfg *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
+	var req loginRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid JSON"})
+		return
+	}
+
+	dbUser, err := cfg.DB.GetUserByEmail(r.Context(), req.Email)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, ErrorResponse{Error: "Incorrect email or password"})
+		return
+	}
+
+	if err := auth.CheckPasswordHash(dbUser.HashedPassword, req.Password); err != nil {
+		writeJSON(w, http.StatusUnauthorized, ErrorResponse{Error: "Incorrect email or password"})
+		return
+	}
+
+	resp := userResponse{
+		ID:        dbUser.ID,
+		CreatedAt: dbUser.CreatedAt,
+		UpdatedAt: dbUser.UpdatedAt,
+		Email:     dbUser.Email,
+	}
+
+	writeJSON(w, http.StatusOK, resp)
 }
