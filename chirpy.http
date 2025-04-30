@@ -39,3 +39,14 @@ Content-Type: application/json
 {
     "body": "this is a kerfuffle and sharbert opinion."
 }
+
+###
+
+### Create Chirp - Valid
+POST http://localhost:8080/api/chirps
+Content-Type: application/json
+
+{
+  "body": "This is a chirp that should be cleaned of kerfuffle and stay under 140 characters.",
+  "user_id": "8fc2d2e2-34a6-46e0-8c1a-de26d473b628"
+}
