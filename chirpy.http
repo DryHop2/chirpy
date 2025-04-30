@@ -50,3 +50,15 @@ Content-Type: application/json
   "body": "This is a chirp that should be cleaned of kerfuffle and stay under 140 characters.",
   "user_id": "8fc2d2e2-34a6-46e0-8c1a-de26d473b628"
 }
+
+###
+
+### Get all chirps
+GET http://localhost:8080/api/chirps
+Accept: application/json
+
+###
+
+### Try to fetch non-existent chirp
+GET http://localhost:8080/api/chirps/00000000-0000-0000-0000-000000000000
+Accept: application/json

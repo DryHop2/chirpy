@@ -22,6 +22,7 @@ func setupRouter(cfg *apiConfig) *http.ServeMux {
 	mux.HandleFunc("POST /admin/reset", cfg.handleAdminReset)
 	mux.HandleFunc("POST /api/chirps", cfg.handleCreateChrip)
 	mux.HandleFunc("GET /api/chirps", cfg.handleGetChirps)
+	mux.HandleFunc("GET /api/chirps/{chirpID}", cfg.handleGetChirp)
 
 	return mux
 }
