@@ -174,3 +174,24 @@ func (cfg *apiConfig) handleCreateChrip(w http.ResponseWriter, r *http.Request) 
 		UserID:    chirp.UserID,
 	})
 }
+
+func (cfg *apiConfig) handleGetChirps(w http.ResponseWriter, r *http.Request) {
+	chirps, err := cfg.DB.GetChirps(r.Context())
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch chirps"})
+		return
+	}
+
+	var resp []chirpResponse
+	for _, chirp := range chirps {
+		resp = append(resp, chirpResponse{
+			ID:        chirp.ID,
+			CreatedAt: chirp.CreatedAt,
+			UpdatedAt: chirp.UpdatedAt,
+			Body:      chirp.Body,
+			UserID:    chirp.UserID,
+		})
+	}
+
+	writeJSON(w, http.StatusOK, resp)
+}
