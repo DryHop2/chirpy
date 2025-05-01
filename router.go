@@ -15,6 +15,7 @@ func setupRouter(s *state.State) *http.ServeMux {
 
 	mux.HandleFunc("GET /api/healthz", handlers.HandleReadiness)
 	mux.HandleFunc("POST /api/users", handlers.HandleCreateUser(s))
+	mux.HandleFunc("PUT /api/users", handlers.HandleUpdateUser(s))
 	mux.HandleFunc("POST /api/login", handlers.HandleLogin(s))
 	mux.HandleFunc("POST /api/refresh", handlers.HandleRefresh(s))
 	mux.HandleFunc("POST /api/revoke", handlers.HandleRevoke(s))
