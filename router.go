@@ -22,6 +22,7 @@ func setupRouter(s *state.State) *http.ServeMux {
 	mux.HandleFunc("POST /api/chirps", handlers.HandleCreateChirp(s))
 	mux.HandleFunc("GET /api/chirps", handlers.HandleGetChirps(s))
 	mux.HandleFunc("GET /api/chirps/{chirpID}", handlers.HandleGetChirp(s))
+	mux.HandleFunc("DELETE /api/chirps/{chirpID}", handlers.HandleDeleteChirps(s))
 
 	mux.HandleFunc("POST /admin/reset", handlers.HandleAdminReset(s))
 	mux.HandleFunc("GET /admin/metrics", handlers.HandleAdminMetrics(s))
