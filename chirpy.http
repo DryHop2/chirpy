@@ -62,3 +62,30 @@ Accept: application/json
 ### Try to fetch non-existent chirp
 GET http://localhost:8080/api/chirps/00000000-0000-0000-0000-000000000000
 Accept: application/json
+
+###
+
+### Login to get JWT
+POST http://localhost:8080/api/login
+Content-Type: application/json
+
+{
+  "email": "saul@bettercall.com",
+  "password": "123456"
+}
+
+> {% 
+// Extract the token from the login response and save it as a variable
+client.global.set("jwt_token", response.body.token);
+%}
+
+###
+
+### Create a chirp (authenticated)
+POST http://localhost:8080/api/chirps
+Authorization: Bearer {{jwt_token}}
+Content-Type: application/json
+
+{
+  "body": "This is my first JWT-authenticated chirp!"
+}

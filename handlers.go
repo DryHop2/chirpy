@@ -153,7 +153,21 @@ type chirpResponse struct {
 }
 
 func (cfg *apiConfig) handleCreateChrip(w http.ResponseWriter, r *http.Request) {
-	var req createChirpRequest
+	tokenStr, err := auth.GetBearerToken(r.Header)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, ErrorResponse{Error: "Missing or malformed token"})
+		return
+	}
+
+	userId, err := auth.ValidateJWT(tokenStr, cfg.jwtSecret)
+	if err != nil {
+		writeJSON(w, http.StatusUnauthorized, ErrorResponse{Error: "Invalide or expired token"})
+		return
+	}
+
+	var req struct {
+		Body string `json:"body"`
+	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid JSON"})
 		return
@@ -172,7 +186,7 @@ func (cfg *apiConfig) handleCreateChrip(w http.ResponseWriter, r *http.Request) 
 		CreatedAt: now,
 		UpdatedAt: now,
 		Body:      cleaned,
-		UserID:    req.UserID,
+		UserID:    userId,
 	})
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to create chirp"})
@@ -237,8 +251,9 @@ func (cfg *apiConfig) handleGetChirp(w http.ResponseWriter, r *http.Request) {
 }
 
 type loginRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email            string `json:"email"`
+	Password         string `json:"password"`
+	ExpiresInSeconds int    `json:"expires_in_seconds"`
 }
 
 func (cfg *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
@@ -259,11 +274,29 @@ func (cfg *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	resp := userResponse{
+	expiration := time.Hour
+	if req.ExpiresInSeconds > 0 && req.ExpiresInSeconds <= 3600 {
+		expiration = time.Duration(req.ExpiresInSeconds) * time.Second
+	}
+
+	token, err := auth.MakeJWT(dbUser.ID, cfg.jwtSecret, expiration)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to create goken"})
+		return
+	}
+
+	resp := struct {
+		ID        uuid.UUID `json:"id"`
+		CreatedAt time.Time `json:"created_at"`
+		UpdatedAt time.Time `json:"updated_at"`
+		Email     string    `json:"email"`
+		Token     string    `json:"token"`
+	}{
 		ID:        dbUser.ID,
 		CreatedAt: dbUser.CreatedAt,
 		UpdatedAt: dbUser.UpdatedAt,
 		Email:     dbUser.Email,
+		Token:     token,
 	}
 
 	writeJSON(w, http.StatusOK, resp)
