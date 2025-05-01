@@ -65,8 +65,11 @@ Accept: application/json
 
 ###
 
+@host = http://localhost:8080
+@jwt_token = 
+
 ### Login to get JWT
-POST http://localhost:8080/api/login
+POST {{host}}/api/login
 Content-Type: application/json
 
 {
@@ -74,18 +77,37 @@ Content-Type: application/json
   "password": "123456"
 }
 
-> {% 
-// Extract the token from the login response and save it as a variable
-client.global.set("jwt_token", response.body.token);
-%}
+> {% client.global.set("jwt_token", response.body.token.trim()); %}
 
-###
+### Token value check
+GET http://localhost:8080/api/healthz
+Authorization: Bearer {{jwt_token}}
 
 ### Create a chirp (authenticated)
-POST http://localhost:8080/api/chirps
+POST {{host}}/api/chirps
 Authorization: Bearer {{jwt_token}}
 Content-Type: application/json
 
 {
-  "body": "This is my first JWT-authenticated chirp!"
+  "body": "This is my JWT-authenticated chirp!"
+}
+
+@jwt_token = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjaGlycHkiLCJzdWIiOiJmNDExMjU0My1kNWVjLTRlYTctODk1Mi1kMWU0ODliMDRkMjkiLCJleHAiOjE3NDYwOTg4MzIsImlhdCI6MTc0NjA5NTIzMn0.VcqwpDC7-o0nXgmbMDKUoTqAGGz69knhdS0Iy73NTZg...
+
+### Create chirp (manual token)
+POST {{host}}/api/chirps
+Authorization: Bearer {{jwt_token}}
+Content-Type: application/json
+
+{
+  "body": "Manual token chirp"
+}
+
+### Manual chirp test with hardcoded token
+POST http://localhost:8080/api/chirps
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJjaGlycHkiLCJzdWIiOiJmNDExMjU0My1kNWVjLTRlYTctODk1Mi1kMWU0ODliMDRkMjkiLCJleHAiOjE3NDYwOTg4MzIsImlhdCI6MTc0NjA5NTIzMn0.VcqwpDC7-o0nXgmbMDKUoTqAGGz69knhdS0Iy73NTZg
+Content-Type: application/json
+
+{
+  "body": "Manual chirp direct token"
 }

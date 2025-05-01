@@ -4,19 +4,13 @@ import (
 	"database/sql"
 	"log"
 	"os"
-	"sync/atomic"
 
 	"github.com/DryHop2/chirpy/internal/database"
+	"github.com/DryHop2/chirpy/internal/state"
 	"github.com/joho/godotenv"
 	_ "github.com/lib/pq"
+	// "google.golang.org/grpc/balancer/grpclb/state"
 )
-
-type apiConfig struct {
-	fileServerHits atomic.Int32
-	DB             *database.Queries
-	platform       string
-	jwtSecret      string
-}
 
 func main() {
 	err := godotenv.Load()
@@ -34,12 +28,12 @@ func main() {
 
 	dbQueries := database.New(db)
 
-	apiCfg := &apiConfig{
-		DB:        dbQueries,
-		platform:  os.Getenv("PLATFORM"),
-		jwtSecret: jwtSecret,
+	appState := &state.State{
+		Queries:   dbQueries,
+		Platform:  os.Getenv("PLATFORM"),
+		JWTSecret: jwtSecret,
 	}
 
-	router := setupRouter(apiCfg)
+	router := setupRouter(appState)
 	startServer(router)
 }

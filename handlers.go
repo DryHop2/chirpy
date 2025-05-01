@@ -1,303 +1,300 @@
 package main
 
-import (
-	"database/sql"
-	"encoding/json"
-	"errors"
-	"fmt"
-	"net/http"
-	"time"
+// handlers.go - deprecated file, logic moved to internal/handlers/*
 
-	"github.com/DryHop2/chirpy/internal/auth"
-	"github.com/DryHop2/chirpy/internal/database"
-	"github.com/google/uuid"
-)
+// import (
+// 	"database/sql"
+// 	"encoding/json"
+// 	"errors"
+// 	"fmt"
+// 	"net/http"
+// 	"time"
 
-func handleReadiness(w http.ResponseWriter, r *http.Request) {
-	writePlainText(w, http.StatusOK, "OK")
-}
+// 	"github.com/DryHop2/chirpy/internal/auth"
+// 	"github.com/DryHop2/chirpy/internal/database"
+// 	"github.com/google/uuid"
+// )
 
-func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		cfg.fileServerHits.Add(1)
-		next.ServeHTTP(w, r)
-	})
-}
-
-func (cfg *apiConfig) handleAdminMetrics(w http.ResponseWriter, r *http.Request) {
-	hits := cfg.fileServerHits.Load()
-
-	html := fmt.Sprintf(`
-	<html>
-		<body>
-			<h1>Welcome, Chirpy Admin</h1>
-			<p>Chirpy has been visited %d times!</p>
-		</body>
-	</html>`, hits)
-
-	writePlainText(w, http.StatusOK, html)
-}
-
-// func (cfg *apiConfig) handleReset(w http.ResponseWriter, r *http.Request) {
-// 	cfg.fileServerHits.Store(0)
-// 	writePlainText(w, http.StatusOK, "Counter reset.")
+// func handleReadiness(w http.ResponseWriter, r *http.Request) {
+// 	writePlainText(w, http.StatusOK, "OK")
 // }
 
-type ChirpRequest struct {
-	Body string `json:"body"`
-}
+// func (cfg *apiConfig) middlewareMetricsInc(next http.Handler) http.Handler {
+// 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+// 		cfg.fileServerHits.Add(1)
+// 		next.ServeHTTP(w, r)
+// 	})
+// }
 
-type ErrorResponse struct {
-	Error string `json:"error"`
-}
+// func (cfg *apiConfig) handleAdminMetrics(w http.ResponseWriter, r *http.Request) {
+// 	hits := cfg.fileServerHits.Load()
 
-type CleanedResponse struct {
-	CleanedBody string `json:"cleaned_body"`
-}
+// 	html := fmt.Sprintf(`
+// 	<html>
+// 		<body>
+// 			<h1>Welcome, Chirpy Admin</h1>
+// 			<p>Chirpy has been visited %d times!</p>
+// 		</body>
+// 	</html>`, hits)
 
-func (cfg *apiConfig) handleValidateChirp(w http.ResponseWriter, r *http.Request) {
-	decoder := json.NewDecoder(r.Body)
-	var chirp ChirpRequest
-	err := decoder.Decode(&chirp)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
-			Error: "Something went wrong",
-		})
-		return
-	}
+// 	writePlainText(w, http.StatusOK, html)
+// }
 
-	if len(chirp.Body) > 140 {
-		writeJSON(w, http.StatusBadRequest, ErrorResponse{
-			Error: "Chirp is too long",
-		})
-		return
-	}
+// // func (cfg *apiConfig) handleReset(w http.ResponseWriter, r *http.Request) {
+// // 	cfg.fileServerHits.Store(0)
+// // 	writePlainText(w, http.StatusOK, "Counter reset.")
+// // }
 
-	cleaned := filterProfanity(chirp.Body)
+// type ChirpRequest struct {
+// 	Body string `json:"body"`
+// }
 
-	writeJSON(w, http.StatusOK, CleanedResponse{
-		CleanedBody: cleaned,
-	})
-}
+// type ErrorResponse struct {
+// 	Error string `json:"error"`
+// }
 
-type createUserRequest struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
-}
+// type CleanedResponse struct {
+// 	CleanedBody string `json:"cleaned_body"`
+// }
 
-type userResponse struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Email     string    `json:"email"`
-}
+// func (cfg *apiConfig) handleValidateChirp(w http.ResponseWriter, r *http.Request) {
+// 	decoder := json.NewDecoder(r.Body)
+// 	var chirp ChirpRequest
+// 	err := decoder.Decode(&chirp)
+// 	if err != nil {
+// 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{
+// 			Error: "Something went wrong",
+// 		})
+// 		return
+// 	}
 
-func (cfg *apiConfig) handleCreateUser(w http.ResponseWriter, r *http.Request) {
-	var req createUserRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid JSON"})
-		return
-	}
+// 	if len(chirp.Body) > 140 {
+// 		writeJSON(w, http.StatusBadRequest, ErrorResponse{
+// 			Error: "Chirp is too long",
+// 		})
+// 		return
+// 	}
 
-	hashedPassword, err := auth.HashPassword(req.Password)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to hash password"})
-		return
-	}
+// 	cleaned := filterProfanity(chirp.Body)
 
-	dbUser, err := cfg.DB.CreateUser(r.Context(), database.CreateUserParams{
-		Email:          req.Email,
-		HashedPassword: hashedPassword,
-	})
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Could not create user"})
-		return
-	}
+// 	writeJSON(w, http.StatusOK, CleanedResponse{
+// 		CleanedBody: cleaned,
+// 	})
+// }
 
-	resp := userResponse{
-		ID:        dbUser.ID,
-		CreatedAt: dbUser.CreatedAt,
-		UpdatedAt: dbUser.UpdatedAt,
-		Email:     dbUser.Email,
-	}
+// type createUserRequest struct {
+// 	Email    string `json:"email"`
+// 	Password string `json:"password"`
+// }
 
-	writeJSON(w, http.StatusCreated, resp)
-}
+// type userResponse struct {
+// 	ID        uuid.UUID `json:"id"`
+// 	CreatedAt time.Time `json:"created_at"`
+// 	UpdatedAt time.Time `json:"updated_at"`
+// 	Email     string    `json:"email"`
+// }
 
-func (cfg *apiConfig) handleAdminReset(w http.ResponseWriter, r *http.Request) {
-	if cfg.platform != "dev" {
-		http.Error(w, "Forbidden", http.StatusForbidden)
-		return
-	}
+// func (cfg *apiConfig) handleCreateUser(w http.ResponseWriter, r *http.Request) {
+// 	var req createUserRequest
+// 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+// 		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid JSON"})
+// 		return
+// 	}
 
-	err := cfg.DB.DeleteAllUsers(r.Context())
-	if err != nil {
-		http.Error(w, "Failed to reset users", http.StatusInternalServerError)
-		return
-	}
+// 	hashedPassword, err := auth.HashPassword(req.Password)
+// 	if err != nil {
+// 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to hash password"})
+// 		return
+// 	}
 
-	writePlainText(w, http.StatusOK, "All users deleted.")
-}
+// 	dbUser, err := cfg.DB.CreateUser(r.Context(), database.CreateUserParams{
+// 		Email:          req.Email,
+// 		HashedPassword: hashedPassword,
+// 	})
+// 	if err != nil {
+// 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Could not create user"})
+// 		return
+// 	}
 
-type createChirpRequest struct {
-	Body   string    `json:"body"`
-	UserID uuid.UUID `json:"user_id"`
-}
+// 	resp := userResponse{
+// 		ID:        dbUser.ID,
+// 		CreatedAt: dbUser.CreatedAt,
+// 		UpdatedAt: dbUser.UpdatedAt,
+// 		Email:     dbUser.Email,
+// 	}
 
-type chirpResponse struct {
-	ID        uuid.UUID `json:"id"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
-	Body      string    `json:"body"`
-	UserID    uuid.UUID `json:"user_id"`
-}
+// 	writeJSON(w, http.StatusCreated, resp)
+// }
 
-func (cfg *apiConfig) handleCreateChrip(w http.ResponseWriter, r *http.Request) {
-	tokenStr, err := auth.GetBearerToken(r.Header)
-	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, ErrorResponse{Error: "Missing or malformed token"})
-		return
-	}
+// func (cfg *apiConfig) handleAdminReset(w http.ResponseWriter, r *http.Request) {
+// 	if cfg.platform != "dev" {
+// 		http.Error(w, "Forbidden", http.StatusForbidden)
+// 		return
+// 	}
 
-	userId, err := auth.ValidateJWT(tokenStr, cfg.jwtSecret)
-	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, ErrorResponse{Error: "Invalide or expired token"})
-		return
-	}
+// 	err := cfg.DB.DeleteAllUsers(r.Context())
+// 	if err != nil {
+// 		http.Error(w, "Failed to reset users", http.StatusInternalServerError)
+// 		return
+// 	}
 
-	var req struct {
-		Body string `json:"body"`
-	}
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid JSON"})
-		return
-	}
+// 	writePlainText(w, http.StatusOK, "All users deleted.")
+// }
 
-	if len(req.Body) > 140 {
-		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Chirp is too long"})
-		return
-	}
+// type chirpResponse struct {
+// 	ID        uuid.UUID `json:"id"`
+// 	CreatedAt time.Time `json:"created_at"`
+// 	UpdatedAt time.Time `json:"updated_at"`
+// 	Body      string    `json:"body"`
+// 	UserID    uuid.UUID `json:"user_id"`
+// }
 
-	cleaned := filterProfanity(req.Body)
-	now := time.Now()
+// func (cfg *apiConfig) handleCreateChrip(w http.ResponseWriter, r *http.Request) {
+// 	tokenStr, err := auth.GetBearerToken(r.Header)
+// 	if err != nil {
+// 		writeJSON(w, http.StatusUnauthorized, ErrorResponse{Error: "Missing or malformed token"})
+// 		return
+// 	}
 
-	chirp, err := cfg.DB.CreateChirp(r.Context(), database.CreateChirpParams{
-		ID:        uuid.New(),
-		CreatedAt: now,
-		UpdatedAt: now,
-		Body:      cleaned,
-		UserID:    userId,
-	})
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to create chirp"})
-		return
-	}
+// 	userID, err := auth.ValidateJWT(tokenStr, cfg.jwtSecret)
+// 	if err != nil {
+// 		writeJSON(w, http.StatusUnauthorized, ErrorResponse{Error: "Invalide or expired token"})
+// 		return
+// 	}
 
-	writeJSON(w, http.StatusCreated, chirpResponse{
-		ID:        chirp.ID,
-		CreatedAt: chirp.CreatedAt,
-		UpdatedAt: chirp.UpdatedAt,
-		Body:      chirp.Body,
-		UserID:    chirp.UserID,
-	})
-}
+// 	var req struct {
+// 		Body string `json:"body"`
+// 	}
+// 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+// 		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid JSON"})
+// 		return
+// 	}
 
-func (cfg *apiConfig) handleGetChirps(w http.ResponseWriter, r *http.Request) {
-	chirps, err := cfg.DB.GetChirps(r.Context())
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch chirps"})
-		return
-	}
+// 	if len(req.Body) > 140 {
+// 		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Chirp is too long"})
+// 		return
+// 	}
 
-	var resp []chirpResponse
-	for _, chirp := range chirps {
-		resp = append(resp, chirpResponse{
-			ID:        chirp.ID,
-			CreatedAt: chirp.CreatedAt,
-			UpdatedAt: chirp.UpdatedAt,
-			Body:      chirp.Body,
-			UserID:    chirp.UserID,
-		})
-	}
+// 	cleaned := filterProfanity(req.Body)
+// 	now := time.Now()
 
-	writeJSON(w, http.StatusOK, resp)
-}
+// 	chirp, err := cfg.DB.CreateChirp(r.Context(), database.CreateChirpParams{
+// 		ID:        uuid.New(),
+// 		CreatedAt: now,
+// 		UpdatedAt: now,
+// 		Body:      cleaned,
+// 		UserID:    userID,
+// 	})
+// 	if err != nil {
+// 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to create chirp"})
+// 		return
+// 	}
 
-func (cfg *apiConfig) handleGetChirp(w http.ResponseWriter, r *http.Request) {
-	chirpIDStr := r.PathValue("chirpID")
-	chirpID, err := uuid.Parse(chirpIDStr)
-	if err != nil {
-		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid chirp ID"})
-		return
-	}
+// 	writeJSON(w, http.StatusCreated, chirpResponse{
+// 		ID:        chirp.ID,
+// 		CreatedAt: chirp.CreatedAt,
+// 		UpdatedAt: chirp.UpdatedAt,
+// 		Body:      chirp.Body,
+// 		UserID:    chirp.UserID,
+// 	})
+// }
 
-	chirp, err := cfg.DB.GetChirpByID(r.Context(), chirpID)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			writeJSON(w, http.StatusNotFound, ErrorResponse{Error: "Chirp not found"})
-		} else {
-			writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch chirp."})
-		}
-		return
-	}
+// func (cfg *apiConfig) handleGetChirps(w http.ResponseWriter, r *http.Request) {
+// 	chirps, err := cfg.DB.GetChirps(r.Context())
+// 	if err != nil {
+// 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch chirps"})
+// 		return
+// 	}
 
-	writeJSON(w, http.StatusOK, chirpResponse{
-		ID:        chirp.ID,
-		CreatedAt: chirp.CreatedAt,
-		UpdatedAt: chirp.UpdatedAt,
-		Body:      chirp.Body,
-		UserID:    chirp.UserID,
-	})
-}
+// 	var resp []chirpResponse
+// 	for _, chirp := range chirps {
+// 		resp = append(resp, chirpResponse{
+// 			ID:        chirp.ID,
+// 			CreatedAt: chirp.CreatedAt,
+// 			UpdatedAt: chirp.UpdatedAt,
+// 			Body:      chirp.Body,
+// 			UserID:    chirp.UserID,
+// 		})
+// 	}
 
-type loginRequest struct {
-	Email            string `json:"email"`
-	Password         string `json:"password"`
-	ExpiresInSeconds int    `json:"expires_in_seconds"`
-}
+// 	writeJSON(w, http.StatusOK, resp)
+// }
 
-func (cfg *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
-	var req loginRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid JSON"})
-		return
-	}
+// func (cfg *apiConfig) handleGetChirp(w http.ResponseWriter, r *http.Request) {
+// 	chirpIDStr := r.PathValue("chirpID")
+// 	chirpID, err := uuid.Parse(chirpIDStr)
+// 	if err != nil {
+// 		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid chirp ID"})
+// 		return
+// 	}
 
-	dbUser, err := cfg.DB.GetUserByEmail(r.Context(), req.Email)
-	if err != nil {
-		writeJSON(w, http.StatusUnauthorized, ErrorResponse{Error: "Incorrect email or password"})
-		return
-	}
+// 	chirp, err := cfg.DB.GetChirpByID(r.Context(), chirpID)
+// 	if err != nil {
+// 		if errors.Is(err, sql.ErrNoRows) {
+// 			writeJSON(w, http.StatusNotFound, ErrorResponse{Error: "Chirp not found"})
+// 		} else {
+// 			writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch chirp."})
+// 		}
+// 		return
+// 	}
 
-	if err := auth.CheckPasswordHash(dbUser.HashedPassword, req.Password); err != nil {
-		writeJSON(w, http.StatusUnauthorized, ErrorResponse{Error: "Incorrect email or password"})
-		return
-	}
+// 	writeJSON(w, http.StatusOK, chirpResponse{
+// 		ID:        chirp.ID,
+// 		CreatedAt: chirp.CreatedAt,
+// 		UpdatedAt: chirp.UpdatedAt,
+// 		Body:      chirp.Body,
+// 		UserID:    chirp.UserID,
+// 	})
+// }
 
-	expiration := time.Hour
-	if req.ExpiresInSeconds > 0 && req.ExpiresInSeconds <= 3600 {
-		expiration = time.Duration(req.ExpiresInSeconds) * time.Second
-	}
+// type loginRequest struct {
+// 	Email            string `json:"email"`
+// 	Password         string `json:"password"`
+// 	ExpiresInSeconds int    `json:"expires_in_seconds"`
+// }
 
-	token, err := auth.MakeJWT(dbUser.ID, cfg.jwtSecret, expiration)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to create goken"})
-		return
-	}
+// func (cfg *apiConfig) handleLogin(w http.ResponseWriter, r *http.Request) {
+// 	var req loginRequest
+// 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+// 		writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid JSON"})
+// 		return
+// 	}
 
-	resp := struct {
-		ID        uuid.UUID `json:"id"`
-		CreatedAt time.Time `json:"created_at"`
-		UpdatedAt time.Time `json:"updated_at"`
-		Email     string    `json:"email"`
-		Token     string    `json:"token"`
-	}{
-		ID:        dbUser.ID,
-		CreatedAt: dbUser.CreatedAt,
-		UpdatedAt: dbUser.UpdatedAt,
-		Email:     dbUser.Email,
-		Token:     token,
-	}
+// 	dbUser, err := cfg.DB.GetUserByEmail(r.Context(), req.Email)
+// 	if err != nil {
+// 		writeJSON(w, http.StatusUnauthorized, ErrorResponse{Error: "Incorrect email or password"})
+// 		return
+// 	}
 
-	writeJSON(w, http.StatusOK, resp)
-}
+// 	if err := auth.CheckPasswordHash(dbUser.HashedPassword, req.Password); err != nil {
+// 		writeJSON(w, http.StatusUnauthorized, ErrorResponse{Error: "Incorrect email or password"})
+// 		return
+// 	}
+
+// 	expiration := time.Hour
+// 	if req.ExpiresInSeconds > 0 && req.ExpiresInSeconds <= 3600 {
+// 		expiration = time.Duration(req.ExpiresInSeconds) * time.Second
+// 	}
+
+// 	token, err := auth.MakeJWT(dbUser.ID, cfg.jwtSecret, expiration)
+// 	if err != nil {
+// 		writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to create goken"})
+// 		return
+// 	}
+
+// 	resp := struct {
+// 		ID        uuid.UUID `json:"id"`
+// 		CreatedAt time.Time `json:"created_at"`
+// 		UpdatedAt time.Time `json:"updated_at"`
+// 		Email     string    `json:"email"`
+// 		Token     string    `json:"token"`
+// 	}{
+// 		ID:        dbUser.ID,
+// 		CreatedAt: dbUser.CreatedAt,
+// 		UpdatedAt: dbUser.UpdatedAt,
+// 		Email:     dbUser.Email,
+// 		Token:     token,
+// 	}
+
+// 	writeJSON(w, http.StatusOK, resp)
+// }

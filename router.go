@@ -2,28 +2,26 @@ package main
 
 import (
 	"net/http"
+
+	"github.com/DryHop2/chirpy/internal/handlers"
+	"github.com/DryHop2/chirpy/internal/state"
 )
 
-func setupRouter(cfg *apiConfig) *http.ServeMux {
+func setupRouter(s *state.State) *http.ServeMux {
 	mux := http.NewServeMux()
 
-	// mux.Handle("/", http.FileServer(http.Dir(".")))
 	appFs := http.StripPrefix("/app", http.FileServer(http.Dir(".")))
-	mux.Handle("/app/", cfg.middlewareMetricsInc(appFs))
+	mux.Handle("/app/", handlers.MetricsMiddleware(s)(appFs))
 
-	// assetsHandler := http.FileServer(http.Dir("./assets"))
-	// mux.Handle("assets/", assetsHandler)
+	mux.HandleFunc("GET /api/healthz", handlers.HandleReadiness)
+	mux.HandleFunc("POST /api/users", handlers.HandleCreateUser(s))
+	mux.HandleFunc("POST /api/login", handlers.HandleLogin(s))
+	mux.HandleFunc("POST /api/chirps", handlers.HandleCreateChirp(s))
+	mux.HandleFunc("GET /api/chirps", handlers.HandleGetChirps(s))
+	mux.HandleFunc("GET /api/chirps/{chirpID}", handlers.HandleGetChirp(s))
 
-	mux.HandleFunc("GET /api/healthz", handleReadiness)
-	mux.HandleFunc("GET /admin/metrics", cfg.handleAdminMetrics)
-	// mux.HandleFunc("POST /admin/reset", cfg.handleReset)
-	// mux.HandleFunc("POST /api/validate_chirp", cfg.handleValidateChirp)
-	mux.HandleFunc("POST /api/users", cfg.handleCreateUser)
-	mux.HandleFunc("POST /admin/reset", cfg.handleAdminReset)
-	mux.HandleFunc("POST /api/chirps", cfg.handleCreateChrip)
-	mux.HandleFunc("GET /api/chirps", cfg.handleGetChirps)
-	mux.HandleFunc("GET /api/chirps/{chirpID}", cfg.handleGetChirp)
-	mux.HandleFunc("POST /api/login", cfg.handleLogin)
+	mux.HandleFunc("POST /admin/reset", handlers.HandleAdminReset(s))
+	mux.HandleFunc("GET /admin/metrics", handlers.HandleAdminMetrics(s))
 
 	return mux
 }
