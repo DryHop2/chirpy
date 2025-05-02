@@ -64,6 +64,7 @@ func HandleLogin(s *state.State) http.HandlerFunc {
 			Email        string    `json:"email"`
 			Token        string    `json:"token"`
 			RefreshToken string    `json:"refresh_token"`
+			IsChirpyRed  bool      `json:"is_chirpy_red"`
 		}{
 			ID:           dbUser.ID,
 			CreatedAt:    dbUser.CreatedAt,
@@ -71,6 +72,7 @@ func HandleLogin(s *state.State) http.HandlerFunc {
 			Email:        dbUser.Email,
 			Token:        token,
 			RefreshToken: refreshToken,
+			IsChirpyRed:  dbUser.IsChirpyRed,
 		})
 	}
 }

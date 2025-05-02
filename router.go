@@ -20,6 +20,7 @@ func setupRouter(s *state.State) *http.ServeMux {
 	mux.HandleFunc("POST /api/refresh", handlers.HandleRefresh(s))
 	mux.HandleFunc("POST /api/revoke", handlers.HandleRevoke(s))
 	mux.HandleFunc("POST /api/chirps", handlers.HandleCreateChirp(s))
+	mux.HandleFunc("POST /api/polka/webhooks", handlers.HandlePolkaWebhook(s))
 	mux.HandleFunc("GET /api/chirps", handlers.HandleGetChirps(s))
 	mux.HandleFunc("GET /api/chirps/{chirpID}", handlers.HandleGetChirp(s))
 	mux.HandleFunc("DELETE /api/chirps/{chirpID}", handlers.HandleDeleteChirps(s))
