@@ -85,7 +85,7 @@ func HandleGetChirps(s *state.State) http.HandlerFunc {
 				writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid author_id"})
 				return
 			}
-			chirps, err = s.Queries.GetChirpsByAuthorID(r.Context(), uid)
+			chirps, err = s.Queries.GetChirpsByAuthorID(r.Context(), uid) //lint:ignore SA4006 we use err after this block
 		} else {
 			chirps, err = s.Queries.GetChirps(r.Context())
 		}
