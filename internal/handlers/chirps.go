@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"sort"
 	"time"
 
 	"github.com/DryHop2/chirpy/internal/auth"
@@ -75,6 +76,7 @@ func HandleCreateChirp(s *state.State) http.HandlerFunc {
 func HandleGetChirps(s *state.State) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		authorID := r.URL.Query().Get("author_id")
+		sortOrder := r.URL.Query().Get("sort")
 
 		var chirps []database.Chirp
 		var err error
@@ -105,6 +107,13 @@ func HandleGetChirps(s *state.State) http.HandlerFunc {
 				UserID:    chirp.UserID,
 			}
 		}
+
+		sort.Slice(resp, func(i, j int) bool {
+			if sortOrder == "desc" {
+				return resp[i].CreatedAt.After(resp[j].CreatedAt)
+			}
+			return resp[i].CreatedAt.Before(resp[j].CreatedAt)
+		})
 
 		writeJSON(w, http.StatusOK, resp)
 	}
