@@ -63,23 +63,46 @@ func HandleCreateChirp(s *state.State) http.HandlerFunc {
 		}
 
 		writeJSON(w, http.StatusCreated, chirpResponse{
-			ID: chirp.ID, CreatedAt: chirp.CreatedAt, UpdatedAt: chirp.UpdatedAt, Body: chirp.Body, UserID: chirp.UserID,
+			ID:        chirp.ID,
+			CreatedAt: chirp.CreatedAt,
+			UpdatedAt: chirp.UpdatedAt,
+			Body:      chirp.Body,
+			UserID:    chirp.UserID,
 		})
 	}
 }
 
 func HandleGetChirps(s *state.State) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		chirps, err := s.Queries.GetChirps(r.Context())
+		authorID := r.URL.Query().Get("author_id")
+
+		var chirps []database.Chirp
+		var err error
+
+		if authorID != "" {
+			uid, err := uuid.Parse(authorID)
+			if err != nil {
+				writeJSON(w, http.StatusBadRequest, ErrorResponse{Error: "Invalid author_id"})
+				return
+			}
+			chirps, err = s.Queries.GetChirpsByAuthorID(r.Context(), uid)
+		} else {
+			chirps, err = s.Queries.GetChirps(r.Context())
+		}
+
 		if err != nil {
-			writeJSON(w, http.StatusInternalServerError, ErrorResponse{"Failed to fetch chirps"})
+			writeJSON(w, http.StatusInternalServerError, ErrorResponse{Error: "Failed to fetch chirps"})
 			return
 		}
 
 		resp := make([]chirpResponse, len(chirps))
 		for i, chirp := range chirps {
 			resp[i] = chirpResponse{
-				ID: chirp.ID, CreatedAt: chirp.CreatedAt, UpdatedAt: chirp.UpdatedAt, Body: chirp.Body, UserID: chirp.UserID,
+				ID:        chirp.ID,
+				CreatedAt: chirp.CreatedAt,
+				UpdatedAt: chirp.UpdatedAt,
+				Body:      chirp.Body,
+				UserID:    chirp.UserID,
 			}
 		}
 
@@ -107,7 +130,11 @@ func HandleGetChirp(s *state.State) http.HandlerFunc {
 		}
 
 		writeJSON(w, http.StatusOK, chirpResponse{
-			ID: chirp.ID, CreatedAt: chirp.CreatedAt, UpdatedAt: chirp.UpdatedAt, Body: chirp.Body, UserID: chirp.UserID,
+			ID:        chirp.ID,
+			CreatedAt: chirp.CreatedAt,
+			UpdatedAt: chirp.UpdatedAt,
+			Body:      chirp.Body,
+			UserID:    chirp.UserID,
 		})
 	}
 }
