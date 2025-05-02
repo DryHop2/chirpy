@@ -9,6 +9,7 @@ import (
 type State struct {
 	Queries   *database.Queries
 	JWTSecret string
+	PolkaKey  string
 	Platform  string
 	Metrics   atomic.Int32
 }

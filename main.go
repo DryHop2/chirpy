@@ -15,6 +15,7 @@ import (
 func main() {
 	err := godotenv.Load()
 	jwtSecret := os.Getenv("JWT_SECRET")
+	polkaKey := os.Getenv("POLKA_KEY")
 
 	if err != nil {
 		log.Fatal("Error loading .env file")
@@ -32,6 +33,7 @@ func main() {
 		Queries:   dbQueries,
 		Platform:  os.Getenv("PLATFORM"),
 		JWTSecret: jwtSecret,
+		PolkaKey:  polkaKey,
 	}
 
 	router := setupRouter(appState)
